@@ -1,291 +1,133 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Building2, 
+  FileText, 
+  CheckSquare, 
+  ClipboardList, 
+  User, 
+  LogOut, 
+  Plus, 
+  ChevronRight, 
+  ArrowLeft, 
+  AlertTriangle, 
+  CheckCircle2, 
+  Clock,
+  HardHat,
+  MapPin
+} from 'lucide-react';
 
+// Cores do Sistema
 const COLORS = {
-  white: '#FFFFFF',
-  bgLight: '#F5F6F5', 
-  charcoal: '#1F2328', 
-  slate: '#3A3F45', 
-  olive: '#88AE9C', 
-  oliveDark: '#6E9280', 
-  ash: '#8B9199', 
-  cardBg: '#F9FAFB',
+  primary: '#1E3A8A',    // Azul Escuro (Institucional)
+  secondary: '#F59E0B',  // Amarelo/Laranja (Atenção/Obras)
+  success: '#10B981',    // Verde (Concluído)
+  danger: '#EF4444',     // Vermelho (Atraso/Problema)
+  background: '#F3F4F6', // Cinza Claro
+  textDark: '#1F2937',   // Cinza Escuro
+  textLight: '#4B5563',  // Cinza Médio
+  white: '#FFFFFF'
 };
 
-function EyeIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M3 3l18 18" strokeLinecap="round" />
-      <path d="M10.6 5.1A10.7 10.7 0 0 1 12 5c7 0 10.5 7 10.5 7a13.4 13.4 0 0 1-3.1 3.9M6.6 6.6C3.5 8.6 1.5 12 1.5 12s3.5 7 10.5 7c1.4 0 2.7-.27 3.9-.75M9.9 9.9a3 3 0 0 0 4.2 4.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Logo({ size = 50, withLabel = true, center = true }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: center ? 'center' : 'flex-start', justifyContent: 'center' }}>
-      <svg viewBox="0 0 100 100" fill="none" width={size} height={size} role="img" aria-label="ObraFlow Logo">
-        <path d="M20 85 V 45 H 38 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M26 55 H 32" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        <path d="M26 67 H 32" stroke={COLORS.charcoal} strokeWidth="1.5" />
-
-        <path d="M38 85 V 15 H 62 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M46 27 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        <path d="M46 39 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        <path d="M46 51 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        
-        <path d="M62 85 V 35 H 80 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
-        <path d="M68 47 H 74" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        <path d="M68 59 H 74" stroke={COLORS.charcoal} strokeWidth="1.5" />
-
-        <path d="M12 85 H 88" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M72 70 L 78 76 L 90 60" stroke={COLORS.olive} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      
-      {withLabel && (
-        <div style={{ textAlign: center ? 'center' : 'left', marginTop: '8px' }}>
-          <div style={{ fontWeight: 'bold', fontSize: '20px', color: COLORS.charcoal, fontFamily: 'sans-serif' }}>
-            Obra<span style={{ color: COLORS.olive }}>Flow</span>
-          </div>
-          <div style={{ fontSize: '8px', fontWeight: '600', marginTop: '4px', color: COLORS.ash, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
-            Planeje. Organize. Construa.
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+// Base de dados inicial mockada
 const INITIAL_PROJECTS = {
   'NRE-01': {
-    title: 'Colégio Estadual Dom Pedro II',
-    location: 'Rua das Flores, 450 - Centro',
+    title: 'Colégio Estadual Santos Dumont',
+    location: 'Curitiba - Centro',
     category: 'nre',
-    diario: '',
+    responsavel: 'Eng. Carlos / Arq. Ana Paula', // Exemplo com dois profissionais
+    diario: 'Fundações concluídas. Iniciando alvenaria do primeiro pavimento.',
     tasks: [
-      { id: 1, text: 'Vistoria técnica das instalações e infraestrutura da quadra', status: 'Concluído', deadline: '2026-07-15' },
-      { id: 2, text: 'Avaliação da cobertura policarbonato avariada', status: 'A fazer', deadline: '2026-07-20' }
+      { id: 1, text: 'Escavação das sapatas', status: 'done' },
+      { id: 2, text: 'Concretagem dos blocos', status: 'done' },
+      { id: 3, text: 'Levantamento de alvenaria', status: 'doing' },
+      { id: 4, text: 'Instalações hidráulicas embutidas', status: 'todo' }
     ]
   },
   'PART-01': {
-    title: 'Residência Jardim das Flores',
-    location: 'Av. das Palmeiras, 1050',
-    category: 'particulares',
-    diario: '',
+    title: 'Residência Unifamiliar - Jd. Social',
+    location: 'Curitiba - Jardim Social',
+    category: 'particular',
+    responsavel: 'Eng. Roberto / Eng. Letícia', // Exemplo com dois profissionais
+    diario: 'Reboco interno finalizado. Iniciando colocação de pisos cerâmicos.',
     tasks: [
-      { id: 1, text: 'Vistoria Estrutural de Sapatas e fundação', status: 'Concluído', deadline: '2026-07-12' },
-      { id: 2, text: 'Conferência do recebimento de armaduras de aço', status: 'Em andamento', deadline: '2026-07-18' }
-    ]
-  },
-  'PART-02': {
-    title: 'Edifício Terraço Verde',
-    location: 'Rua Chile, 89',
-    category: 'particulares',
-    diario: '',
-    tasks: [
-      { id: 1, text: 'Medição fina de gesso e acabamentos internos', status: 'A fazer', deadline: '2026-07-25' },
-      { id: 2, text: 'Revisão dos pontos de iluminação e elétrica em tetos', status: 'A fazer', deadline: '2026-07-30' }
+      { id: 1, text: 'Instalação elétrica interna', status: 'done' },
+      { id: 2, text: 'Reboco das paredes', status: 'done' },
+      { id: 3, text: 'Colocação de porcelanato', status: 'doing' }
     ]
   }
 };
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); 
-  const [email, setEmail] = useState('');
+  // Estados de Autenticação
+  const [user, setUser] = useState(null);
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true); 
-  
-  // Novos estados para carregar o perfil dinâmico
-  const [userName, setUserName] = useState('');
-  const [userRole, setUserRole] = useState('engenheiro'); 
-  const [authError, setAuthError] = useState('');
+  const [loginError, setLoginError] = useState('');
 
-  const [currentScreen, setCurrentScreen] = useState('login');
-  const [activeTab, setActiveTab] = useState('nre'); 
+  // Estados do App
+  const [projects, setProjects] = useState(() => {
+    const saved = localStorage.getItem('obraflow_projects');
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+  });
+  const [activeTab, setActiveTab] = useState('nre'); // 'nre' ou 'particular'
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [currentScreen, setCurrentScreen] = useState('login'); // 'login', 'dashboard', 'details'
 
-  const [projects, setProjects] = useState(INITIAL_PROJECTS);
-  const [activeProjectCode, setActiveProjectCode] = useState('');
-  
-  const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskDeadline, setNewTaskDeadline] = useState('');
-  const [newTaskStatus, setNewTaskStatus] = useState('A fazer');
+  // Estados de Formulários
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProjTitle, setNewProjTitle] = useState('');
   const [newProjLocation, setNewProjLocation] = useState('');
+  const [newProjResponsavel, setNewProjResponsavel] = useState(''); // Campo para os profissionais
+  const [newTaskText, setNewTaskText] = useState('');
+  const [diarioText, setDiarioText] = useState('');
 
+  // Persistência
   useEffect(() => {
-    const activeUser = localStorage.getItem('obraflow_current_user');
-    const activeRole = localStorage.getItem('obraflow_current_role');
-    
-    if (activeUser) {
-      setUserName(activeUser);
-      setUserRole(activeRole || 'engenheiro');
-      setIsLoggedIn(true);
-      setCurrentScreen('dashboard');
+    localStorage.setItem('obraflow_projects', JSON.stringify(projects));
+  }, [projects]);
 
-      const savedUserData = localStorage.getItem(`obraflow_data_${activeUser}`);
-      if (savedUserData) {
-        setProjects(JSON.parse(savedUserData));
-      } else {
-        setProjects(INITIAL_PROJECTS);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isLoggedIn && userName) {
-      localStorage.setItem(`obraflow_data_${userName}`, JSON.stringify(projects));
-    }
-  }, [projects, isLoggedIn, userName]);
-
-  const extractFirstNameFromEmail = (inputEmail) => {
-    const usernamePart = inputEmail.split('@')[0];
-    let cleanName = usernamePart.split(/[\._-]/)[0];
-    
-    if (cleanName.toLowerCase().startsWith('gabryelly')) {
-      cleanName = 'Gabryelly';
-    } else {
-      cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-    }
-    return cleanName;
-  };
-
-  const handleAuthSubmit = (e) => {
+  // Função de Login Simplificada por Perfil
+  const handleLogin = (e) => {
     e.preventDefault();
-    setAuthError('');
+    if (!username || !password) {
+      setLoginError('Preencha todos os campos.');
+      return;
+    }
 
-    const registeredUsers = JSON.parse(localStorage.getItem('obraflow_users_db') || '[]');
-
-    if (authMode === 'signup') {
-      const userExists = registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (userExists) {
-        setAuthError('Este e-mail já está cadastrado.');
-        return;
-      }
-
-      const generatedName = extractFirstNameFromEmail(email);
-      const updatedUsersList = [...registeredUsers, { email, password, name: generatedName, role: userRole }];
-      localStorage.setItem('obraflow_users_db', JSON.stringify(updatedUsersList));
-      
-      if (rememberMe) {
-        localStorage.setItem('obraflow_current_user', generatedName);
-        localStorage.setItem('obraflow_current_role', userRole);
-      }
-      setUserName(generatedName);
-      setProjects(INITIAL_PROJECTS);
-      setIsLoggedIn(true);
+    if (username.toLowerCase() === 'fiscal' && password === '1234') {
+      setUser({ name: 'Fiscal do Estado', role: 'fiscal' });
       setCurrentScreen('dashboard');
+      setLoginError('');
+    } else if (username.toLowerCase() === 'particular' && password === '1234') {
+      setUser({ name: 'Engenheiro Residente', role: 'particular' });
+      setCurrentScreen('dashboard');
+      setLoginError('');
     } else {
-      const matchedUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-      
-      if (!matchedUser) {
-        setAuthError('E-mail ou senha incorretos.');
-        return;
-      }
-
-      if (rememberMe) {
-        localStorage.setItem('obraflow_current_user', matchedUser.name);
-        localStorage.setItem('obraflow_current_role', matchedUser.role || 'engenheiro');
-      } else {
-        localStorage.removeItem('obraflow_current_user');
-        localStorage.removeItem('obraflow_current_role');
-      }
-      
-      setUserName(matchedUser.name);
-      setUserRole(matchedUser.role || 'engenheiro');
-      
-      const savedUserData = localStorage.getItem(`obraflow_data_${matchedUser.name}`);
-      setProjects(savedUserData ? JSON.parse(savedUserData) : INITIAL_PROJECTS);
-      
-      setIsLoggedIn(true);
-      setCurrentScreen('dashboard');
+      setLoginError('Usuário ou senha incorretos.');
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('obraflow_current_user');
-    localStorage.removeItem('obraflow_current_role');
-    setIsLoggedIn(false);
+    setUser(null);
+    setUsername('');
     setPassword('');
-    setEmail('');
-    setAuthError('');
     setCurrentScreen('login');
   };
 
-  const openProjectDetails = (code) => {
-    setActiveProjectCode(code);
-    setCurrentScreen('detalhes');
-  };
-
-  const changeTaskStatus = (taskId, newStatus) => {
-    setProjects(prev => ({
-      ...prev,
-      [activeProjectCode]: {
-        ...prev[activeProjectCode],
-        tasks: prev[activeProjectCode].tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
-      }
-    }));
-  };
-
-  const handleAddTask = (e) => {
-    e.preventDefault();
-    if (!newTaskText.trim()) return;
-
-    const currentTasks = projects[activeProjectCode].tasks;
-    const newId = currentTasks.length > 0 ? Math.max(...currentTasks.map(t => t.id)) + 1 : 1;
-    
-    const createdTask = { 
-      id: newId, 
-      text: newTaskText.trim(), 
-      status: newTaskStatus, 
-      deadline: newTaskDeadline || 'Sem prazo' 
-    };
-
-    setProjects(prev => ({
-      ...prev,
-      [activeProjectCode]: {
-        ...prev[activeProjectCode],
-        tasks: [...prev[activeProjectCode].tasks, createdTask]
-      }
-    }));
-    setNewTaskText('');
-    setNewTaskDeadline('');
-    setNewTaskStatus('A fazer');
-  };
-
-  const handleUpdateDiario = (texto) => {
-    setProjects(prev => ({
-      ...prev,
-      [activeProjectCode]: {
-        ...prev[activeProjectCode],
-        diario: texto
-      }
-    }));
-  };
-
+  // Criação de Projetos
   const handleCreateProject = (e) => {
     e.preventDefault();
-    if (!newProjTitle.trim() || !newProjLocation.trim()) return;
+    if (!newProjTitle.trim() || !newProjLocation.trim() || !newProjResponsavel.trim()) return;
 
     const prefix = activeTab === 'nre' ? 'NRE' : 'PART';
     const existingKeys = Object.keys(projects).filter(k => k.startsWith(prefix));
-    const nextIndex = existingKeys.length + 1;
-    const generatedCode = `${prefix}-${String(nextIndex).padStart(2, '0')}`;
+    const generatedCode = `${prefix}-${String(existingKeys.length + 1).padStart(2, '0')}`;
 
     const newProjectStructure = {
       title: newProjTitle.trim(),
       location: newProjLocation.trim(),
       category: activeTab,
+      responsavel: newProjResponsavel.trim(), // Salva a string com os dois profissionais
       diario: '',
       tasks: [] 
     };
@@ -297,287 +139,329 @@ export default function App() {
 
     setNewProjTitle('');
     setNewProjLocation('');
+    setNewProjResponsavel('');
     setShowNewProjectForm(false);
   };
 
-  // Renderiza a saudação customizada conforme o papel escolhido
-  const renderGreeting = () => {
-    if (userRole === 'engenheiro') return `Olá, Engenheiro(a) ${userName}! 👷‍♂️`;
-    if (userRole === 'arquiteto') return `Olá, Arquiteto(a) ${userName}! 📐`;
-    return `Olá, ${userName}! 👋`; // Caso seja Cliente
+  // Adicionar Tarefa
+  const handleAddTask = (e) => {
+    e.preventDefault();
+    if (!newTaskText.trim() || !selectedProjectId) return;
+
+    setProjects(prev => {
+      const proj = prev[selectedProjectId];
+      const newId = proj.tasks.length > 0 ? Math.max(...proj.tasks.map(t => t.id)) + 1 : 1;
+      const newTask = { id: newId, text: newTaskText.trim(), status: 'todo' };
+      return {
+        ...prev,
+        [selectedProjectId]: {
+          ...proj,
+          tasks: [...proj.tasks, newTask]
+        }
+      };
+    });
+    setNewTaskText('');
   };
 
-  const totalObras = Object.keys(projects).length;
-  const todasAsTarefas = Object.values(projects).flatMap(p => p.tasks);
-  const tarefasConcluidasCount = todasAsTarefas.filter(t => t.status === 'Concluído').length;
-  const tarefasAndamentoCount = todasAsTarefas.filter(t => t.status === 'Em andamento').length;
-  const tarefasPendentesCount = todasAsTarefas.filter(t => t.status === 'A fazer').length;
+  // Alterar Status da Tarefa
+  const handleToggleTaskStatus = (taskId, currentStatus) => {
+    let nextStatus = 'todo';
+    if (currentStatus === 'todo') nextStatus = 'doing';
+    if (currentStatus === 'doing') nextStatus = 'done';
 
-  const currentProject = projects[activeProjectCode];
+    setProjects(prev => {
+      const proj = prev[selectedProjectId];
+      const updatedTasks = proj.tasks.map(t => t.id === taskId ? { ...t, status: nextStatus } : t);
+      return {
+        ...prev,
+        [selectedProjectId]: { ...proj, tasks: updatedTasks }
+      };
+    });
+  };
 
-  if (!isLoggedIn) {
+  // Atualizar Diário de Obra
+  const handleSaveDiario = () => {
+    if (!selectedProjectId) return;
+    setProjects(prev => ({
+      ...prev,
+      [selectedProjectId]: {
+        ...prev[selectedProjectId],
+        diario: diarioText
+      }
+    }));
+    alert('Diário de obra atualizado com sucesso!');
+  };
+
+  // Abrir Detalhes da Obra
+  const openProjectDetails = (id) => {
+    setSelectedProjectId(id);
+    setDiarioText(projects[id].diario || '');
+    setCurrentScreen('details');
+  };
+
+  // Renderização das Telas
+  if (currentScreen === 'login') {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backgroundColor: COLORS.bgLight, fontFamily: 'sans-serif' }}>
-        <div style={{ width: '100%', maxWidth: '400px', padding: '32px', borderRadius: '16px', backgroundColor: COLORS.white, border: '1px solid #E5E7EB', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}>
-          <Logo size={75} center={true} />
-          
-          <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '20px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: COLORS.charcoal }}>
-              {authMode === 'login' ? 'Bem-vindo de volta' : 'Criar Nova Conta'}
-            </h2>
-            <p style={{ fontSize: '14px', color: COLORS.ash, margin: '0' }}>
-              {authMode === 'login' ? 'Gerencie suas vistorias e relatórios' : 'Cadastre-se para gerenciar suas demandas'}
-            </p>
+      <div style={{ display: 'flex', height: '100vh', backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', padding: '20px' }}>
+        <div style={{ backgroundColor: COLORS.white, padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '30px', justifyContent: 'center' }}>
+            <Building2 size={36} color={COLORS.primary} />
+            <span style={{ fontSize: '28px', fontWeight: 'bold', color: COLORS.primary, letterSpacing: '-1px' }}>ObraFlow</span>
           </div>
-
-          {authError && (
-            <div style={{ backgroundColor: '#FEE2E2', color: '#991B1B', padding: '10px', borderRadius: '8px', fontSize: '13px', textAlign: 'center', marginBottom: '16px', fontWeight: '500' }}>
-              ⚠️ {authError}
+          
+          <h2 style={{ fontSize: '18px', marginBottom: '20px', textAlign: 'center', color: COLORS.textDark }}>Acesso ao Sistema</h2>
+          
+          {loginError && (
+            <div style={{ backgroundColor: '#FEE2E2', color: COLORS.danger, padding: '10px', borderRadius: '6px', marginBottom: '15px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertTriangle size={16} /> {loginError}
             </div>
           )}
 
-          <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            
-            {/* SELEÇÃO DO TIPO DE PERFIL - EXIBIDO APENAS NO CADASTRO */}
-            {authMode === 'signup' && (
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', color: COLORS.slate }}>Tipo de Perfil</label>
-                <select 
-                  value={userRole} 
-                  onChange={(e) => setUserRole(e.target.value)} 
-                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, color: COLORS.charcoal, outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value="engenheiro">👷‍♂️ Engenheiro(a)</option>
-                  <option value="arquiteto">📐 Arquiteto(a)</option>
-                  <option value="cliente">🏠 Cliente</option>
-                </select>
-              </div>
-            )}
-
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', color: COLORS.slate }}>E-mail corporativo</label>
-              <input type="email" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, color: COLORS.charcoal, outline: 'none' }} placeholder="nome@empresa.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: COLORS.textLight, marginBottom: '6px' }}>Usuário</label>
+              <input type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Ex: fiscal ou particular" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', color: COLORS.slate }}>Senha</label>
-              <div style={{ position: 'relative', width: '100%' }}>
-                <input type={showPassword ? 'text' : 'password'} required style={{ width: '100%', boxSizing: 'border-box', padding: '12px 48px 12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, color: COLORS.charcoal, outline: 'none' }} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <button type="button" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: COLORS.ash }} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button>
-              </div>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: COLORS.textLight, marginBottom: '6px' }}>Senha</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••" style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', outline: 'none', boxSizing: 'border-box' }} />
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0' }}>
-              <input 
-                type="checkbox" 
-                id="rememberMe" 
-                checked={rememberMe} 
-                onChange={(e) => setRememberMe(e.target.checked)} 
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: COLORS.olive }}
-              />
-              <label htmlFor="rememberMe" style={{ fontSize: '13px', color: COLORS.slate, cursor: 'pointer', userSelect: 'none' }}>
-                Salvar usuário neste dispositivo
-              </label>
-            </div>
-
-            <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', backgroundColor: COLORS.olive, color: COLORS.white, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-              {authMode === 'login' ? 'Entrar no Sistema' : 'Finalizar Cadastro'}
+            <button type="submit" style={{ backgroundColor: COLORS.primary, color: COLORS.white, padding: '12px', borderRadius: '8px', border: 'none', fontWeight: '6px', fontSize: '15px', cursor: 'pointer', marginTop: '10px' }}>
+              Entrar
             </button>
           </form>
-
-          <div style={{ marginTop: '24px', textAlign: 'center', borderTop: '1px solid #E5E7EB', paddingTop: '16px' }}>
-            <button 
-              onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }}
-              style={{ background: 'none', border: 'none', color: COLORS.oliveDark, fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-            >
-              {authMode === 'login' ? 'Não tem conta? Cadastre-se aqui' : 'Já possui uma conta? Faça Login'}
-            </button>
+          <div style={{ marginTop: '20px', fontSize: '12px', color: '#9CA3AF', textAlign: 'center' }}>
+            Use 'fiscal' ou 'particular' com a senha '1234'
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F3F4F6', fontFamily: 'sans-serif', color: COLORS.charcoal }}>
-      <header style={{ backgroundColor: COLORS.white, padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E7EB' }}>
-        <Logo size={40} withLabel={true} center={false} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {/* SAUDAÇÃO CUSTOMIZADA POR PERFIL */}
-          <span style={{ fontSize: '14px', fontWeight: '500', color: COLORS.slate }}>{renderGreeting()}</span>
-          <button onClick={handleLogout} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: COLORS.white, cursor: 'pointer', color: COLORS.slate }}>Sair</button>
-        </div>
-      </header>
+  if (currentScreen === 'dashboard') {
+    const filteredCodes = Object.keys(projects).filter(code => projects[code].category === activeTab);
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-        {currentScreen === 'dashboard' && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-              <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.ash, textTransform: 'uppercase' }}>Obras Ativas</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: COLORS.charcoal, marginTop: '4px' }}>{totalObras}</div>
-              </div>
-              <div style={{ backgroundColor: '#FEF3C7', padding: '20px', borderRadius: '12px', border: '1px solid #FCD34D' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#B45309', textTransform: 'uppercase' }}>⏳ A Fazer / Pendentes</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#92400E', marginTop: '4px' }}>{tarefasPendentesCount}</div>
-              </div>
-              <div style={{ backgroundColor: '#DBEAFE', padding: '20px', borderRadius: '12px', border: '1px solid #BFDBFE' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1D4ED8', textTransform: 'uppercase' }}>⚙️ Em Andamento</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1E40AF', marginTop: '4px' }}>{tarefasAndamentoCount}</div>
-              </div>
-              <div style={{ backgroundColor: '#D1FAE5', padding: '20px', borderRadius: '12px', border: '1px solid #A7F3D0' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#047857', textTransform: 'uppercase' }}>✅ Concluídas</div>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065F46', marginTop: '4px' }}>{tarefasConcluidasCount}</div>
-              </div>
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: COLORS.background, fontFamily: 'sans-serif' }}>
+        {/* Header */}
+        <header style={{ backgroundColor: COLORS.primary, color: COLORS.white, padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Building2 size={24} />
+            <span style={{ fontSize: '20px', fontWeight: 'bold' }}>ObraFlow</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '20px', fontSize: '14px' }}>
+              <User size={16} />
+              <span>{user?.name}</span>
+            </div>
+            <button onClick={handleLogout} style={{ background: 'none', border: 'none', color: COLORS.white, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px' }}>
+              <LogOut size={16} /> Sair
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+          
+          {/* Navegação de Abas de Modos/Contratos */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid #E5E7EB', paddingBottom: '1px' }}>
+            <button onClick={() => { setActiveTab('nre'); setShowNewProjectForm(false); }} style={{ padding: '12px 24px', fontSize: '16px', fontWeight: '600', border: 'none', background: 'none', borderBottom: activeTab === 'nre' ? `4px solid ${COLORS.secondary}` : '4px solid transparent', color: activeTab === 'nre' ? COLORS.primary : COLORS.textLight, cursor: 'pointer' }}>
+              Obras Públicas (NRE)
+            </button>
+            <button onClick={() => { setActiveTab('particular'); setShowNewProjectForm(false); }} style={{ padding: '12px 24px', fontSize: '16px', fontWeight: '600', border: 'none', background: 'none', borderBottom: activeTab === 'particular' ? `4px solid ${COLORS.secondary}` : '4px solid transparent', color: activeTab === 'particular' ? COLORS.primary : COLORS.textLight, cursor: 'pointer' }}>
+              Contratos Particulares
+            </button>
+          </div>
+
+          {/* Título da Seção e Ação */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '22px', fontWeight: '700', color: COLORS.textDark }}>
+              {activeTab === 'nre' ? 'Demandas de Núcleos Regionais de Educação' : 'Projetos e Reformas Privadas'}
+            </h2>
+            <button onClick={() => setShowNewProjectForm(!showNewProjectForm)} style={{ backgroundColor: COLORS.secondary, color: COLORS.white, border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              <Plus size={18} /> Nova Demanda
+            </button>
+          </div>
+
+          {/* Formulário de Novo Projeto */}
+          {showNewProjectForm && (
+            <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', marginBottom: '24px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', border: '1px solid #E5E7EB' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '14px', color: COLORS.textDark }}>Cadastrar Nova Obra/Demanda</h3>
+              <form onSubmit={handleCreateProject} style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input type="text" required placeholder="Nome do Projeto / Escola" value={newProjTitle} onChange={e => setNewProjTitle(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input type="text" required placeholder="Localização / Município" value={newProjLocation} onChange={e => setNewProjLocation(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: '200px' }}>
+                  <input type="text" required placeholder="Profissionais (Ex: Eng. Carlos / Arq. Marina)" value={newProjResponsavel} onChange={e => setNewProjResponsavel(e.target.value)} style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="submit" style={{ backgroundColor: COLORS.primary, color: COLORS.white, border: 'none', padding: '11px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>Salvar</button>
+                  <button type="button" onClick={() => setShowNewProjectForm(false)} style={{ backgroundColor: '#E5E7EB', color: COLORS.textDark, border: 'none', padding: '11px 20px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '14px' }}>Cancelar</button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Grid de Cards de Projetos */}
+          {filteredCodes.length === 0 ? (
+            <div style={{ backgroundColor: COLORS.white, textAlign: 'center', padding: '40px', borderRadius: '12px', color: COLORS.textLight, border: '1px dashed #CDD5DF' }}>
+              Nenhuma obra cadastrada nesta categoria.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+              {filteredCodes.map(code => {
+                const proj = projects[code];
+                const doneTasks = proj.tasks.filter(t => t.status === 'done').length;
+                const totalTasks = proj.tasks.length;
+                const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
+
+                return (
+                  <div key={code} onClick={() => openProjectDetails(code)} style={{ backgroundColor: COLORS.white, borderRadius: '12px', padding: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', border: '1px solid #E5E7EB', cursor: 'pointer', transition: 'transform 0.2s', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                        <span style={{ backgroundColor: '#E0E7FF', color: COLORS.primary, padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>{code}</span>
+                        <ChevronRight size={18} color="#9CA3AF" />
+                      </div>
+                      <h3 style={{ fontSize: '18px', fontWeight: '700', color: COLORS.textDark, marginBottom: '6px' }}>{proj.title}</h3>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: COLORS.textLight, fontSize: '13px', marginBottom: '6px' }}>
+                        <MapPin size={14} />
+                        <span>{proj.location}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: COLORS.textLight, fontSize: '13px', marginBottom: '14px' }}>
+                        <HardHat size={14} />
+                        <span>{proj.responsavel || 'Não atribuído'}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: COLORS.textDark }}>
+                        <span>Progresso Geral</span>
+                        <span>{pct}%</span>
+                      </div>
+                      <div style={{ width: '100%', backgroundColor: '#E5E7EB', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, backgroundColor: pct === 100 ? COLORS.success : COLORS.primary, height: '100%', borderRadius: '4px' }}></div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', marginTop: '12px', fontSize: '12px', color: COLORS.textLight }}>
+                        <span>{totalTasks} Checklists</span>
+                        <span>•</span>
+                        <span>{doneTasks} Concluídos</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  if (currentScreen === 'details') {
+    const project = projects[selectedProjectId];
+    if (!project) return null;
+
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: COLORS.background, fontFamily: 'sans-serif' }}>
+        {/* Header Detalhes */}
+        <header style={{ backgroundColor: COLORS.primary, color: COLORS.white, padding: '16px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button onClick={() => setCurrentScreen('dashboard')} style={{ background: 'none', border: 'none', color: COLORS.white, cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+            <ArrowLeft size={22} />
+          </button>
+          <div>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(255,255,255,0.2)', padding: '2px 6px', borderRadius: '4px', marginRight: '8px' }}>{selectedProjectId}</span>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', display: 'inline-block' }}>{project.title}</h1>
+          </div>
+        </header>
+
+        {/* Content Detalhes */}
+        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
+          
+          {/* Coluna da Esquerda: Informações e Diário de Obra */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Box Meta Info */}
+            <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: '700', marginBottom: '14px', color: COLORS.textDark, borderBottom: '1px solid #E5E7EB', paddingBottom: '8px' }}>Dados da Obra</h2>
+              <p style={{ fontSize: '14px', marginBottom: '8px', color: COLORS.textLight }}><strong>Localização:</strong> {project.location}</p>
+              <p style={{ fontSize: '14px', color: COLORS.textLight }}><strong>Responsáveis:</strong> {project.responsavel || 'Não atribuído'}</p>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-              <div>
-                <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0 }}>Carteira de Projetos</h1>
+            {/* Box Diário de Obra */}
+            <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px' }}>
+                <FileText size={18} color={COLORS.primary} />
+                <h2 style={{ fontSize: '16px', fontWeight: '700', color: COLORS.textDark }}>Diário de Obra / Relatório Técnico</h2>
               </div>
-              <button 
-                onClick={() => setShowNewProjectForm(!showNewProjectForm)}
-                style={{ padding: '10px 18px', backgroundColor: COLORS.charcoal, color: COLORS.white, border: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-              >
-                {showNewProjectForm ? '✕ Cancelar Cadastro' : `+ Adicionar Nova Demanda`}
+              
+              <textarea value={diarioText} onChange={e => setDiarioText(e.target.value)} placeholder="Descreva aqui o andamento físico da obra, impasses, vistorias realizadas ou observações gerais de engenharia..." style={{ width: '100%', flex: 1, minHeight: '150px', padding: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px', resize: 'none', outline: 'none', fontFamily: 'sans-serif', boxSizing: 'border-box' }} />
+              
+              <button onClick={handleSaveDiario} style={{ marginTop: '12px', backgroundColor: COLORS.primary, color: COLORS.white, border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', fontSize: '14px', width: 'fit-content', alignSelf: 'flex-end' }}>
+                Salvar Relatório
               </button>
             </div>
+          </div>
 
-            {showNewProjectForm && (
-              <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '16px', border: `2px dashed ${COLORS.olive}`, marginBottom: '24px' }}>
-                <h3 style={{ margin: '0 0 16px 0', fontSize: '15px' }}>Cadastrar Nova Demanda ({activeTab === 'nre' ? 'Setor Público NRE' : 'Projetos Particulares'})</h3>
-                <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <input type="text" required placeholder="Nome do Projeto / Escola" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
-                    <input type="text" required placeholder="Endereço Completo" value={newProjLocation} onChange={(e) => setNewProjLocation(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
-                  </div>
-                  <button type="submit" style={{ alignSelf: 'flex-start', padding: '10px 20px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-                    Salvar Obra no Painel
-                  </button>
-                </form>
-              </div>
-            )}
-
-            <div style={{ backgroundColor: COLORS.white, padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ display: 'flex', borderBottom: '2px solid #E5E7EB', marginBottom: '20px', gap: '8px' }}>
-                <button onClick={() => { setActiveTab('nre'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'nre' ? `3px solid ${COLORS.olive}` : '3px solid transparent', color: activeTab === 'nre' ? COLORS.oliveDark : COLORS.ash }}>
-                  🏫 Demandas Públicas NRE
-                </button>
-                <button onClick={() => { setActiveTab('particulares'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'particulares' ? `3px solid ${COLORS.charcoal}` : '3px solid transparent', color: activeTab === 'particulares' ? COLORS.charcoal : COLORS.ash }}>
-                  💼 Projetos Particulares
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {Object.keys(projects)
-                  .filter(code => projects[code].category === activeTab)
-                  .map(code => {
-                    const proj = projects[code];
-                    const finished = proj.tasks.filter(t => t.status === 'Concluído').length;
-                    const total = proj.tasks.length;
-                    const percentual = total > 0 ? Math.round((finished / total) * 100) : 0;
-
-                    return (
-                      <div key={code} onClick={() => openProjectDetails(code)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderRadius: '12px', backgroundColor: '#F9FAFB', cursor: 'pointer', border: '1px solid #E5E7EB', transition: '0.2s' }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold', fontSize: '15px', color: COLORS.charcoal }}>{proj.title} <span style={{ color: COLORS.olive, fontSize: '12px' }}>({code})</span></div>
-                          <div style={{ fontSize: '12px', color: COLORS.ash, marginTop: '2px' }}>📍 {proj.location}</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: COLORS.oliveDark }}>{percentual}% Concluído</span>
-                          <div style={{ fontSize: '11px', color: COLORS.ash }}>{finished} de {total} macro-tarefas</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-              </div>
+          {/* Coluna da Direita: Gerenciamento de Checklists / Notas de Campo */}
+          <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #E5E7EB', paddingBottom: '8px' }}>
+              <CheckSquare size={18} color={COLORS.primary} />
+              <h2 style={{ fontSize: '16px', fontWeight: '700', color: COLORS.textDark }}>Checklist de Itens e Vistorias</h2>
             </div>
-          </>
-        )}
 
-        {currentScreen === 'detalhes' && currentProject && (
-          <>
-            <button onClick={() => setCurrentScreen('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: COLORS.charcoal, fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginBottom: '16px', padding: 0 }}>
-              ← Voltar para a Visão Geral
-            </button>
+            {/* Formulário de Nova Tarefa */}
+            <form onSubmit={handleAddTask} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <input type="text" required placeholder="Nova verificação (Ex: Lançar pilares)" value={newTaskText} onChange={e => setNewTaskText(e.target.value)} style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+              <button type="submit" style={{ backgroundColor: '#E5E7EB', color: COLORS.textDark, border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>Inserir</button>
+            </form>
 
-            <div style={{ backgroundColor: COLORS.white, padding: '28px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
-              <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '24px' }}>
-                <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: COLORS.white, backgroundColor: COLORS.charcoal, padding: '4px 8px', borderRadius: '6px' }}>{activeProjectCode}</span>
-                <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '12px 0 4px 0' }}>{currentProject.title}</h1>
-                <p style={{ color: COLORS.ash, margin: 0, fontSize: '13px' }}>📍 {currentProject.location}</p>
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>📋 Fluxo de Tarefas da Inspeção</h3>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                  {currentProject.tasks.map((task) => (
-                    <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', borderRadius: '10px', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', gap: '12px', flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: '250px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '500', color: task.status === 'Concluído' ? COLORS.ash : COLORS.charcoal, textDecoration: task.status === 'Concluído' ? 'line-through' : 'none' }}>
-                          {task.text}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#EF4444', fontWeight: '600', marginTop: '4px' }}>
-                          📅 Limite: {task.deadline.split('-').reverse().join('/')}
-                        </div>
-                      </div>
-
-                      <select 
-                        value={task.status} 
-                        onChange={(e) => changeTaskStatus(task.id, e.target.value)}
-                        style={{ 
-                          padding: '6px 10px', 
-                          borderRadius: '6px', 
-                          fontSize: '12px', 
-                          fontWeight: 'bold', 
-                          border: '1px solid #D1D5DB', 
-                          outline: 'none',
-                          cursor: 'pointer',
-                          backgroundColor: task.status === 'Concluído' ? '#D1FAE5' : task.status === 'Em andamento' ? '#DBEAFE' : '#FEF3C7',
-                          color: task.status === 'Concluído' ? '#065F46' : task.status === 'Em andamento' ? '#1E40AF' : '#92400E'
-                        }}
-                      >
-                        <option value="A fazer">⏳ A fazer</option>
-                        <option value="Em andamento">⚙️ Em andamento</option>
-                        <option value="Concluído">✅ Concluído</option>
-                      </select>
-                    </div>
-                  ))}
-                </div>
-
-                <form onSubmit={handleAddTask} style={{ backgroundColor: COLORS.bgLight, padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: COLORS.slate }}>+ Adicionar Nova Diretriz à Vistoria:</div>
-                  <input type="text" required value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="Descrição do item técnico..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+            {/* Lista de Itens */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {project.tasks.length === 0 ? (
+                <div style={{ color: COLORS.textLight, fontSize: '13px', textAlign: 'center', padding: '20px' }}>Nenhum item adicionado ao checklist.</div>
+              ) : (
+                project.tasks.map(task => {
+                  let badgeIcon = <Clock size={14} color="#9CA3AF" />;
+                  let bgTaskColor = '#F9FAFB';
                   
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '130px' }}>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Prazo Limite</label>
-                      <input type="date" required value={newTaskDeadline} onChange={(e) => setNewTaskDeadline(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px' }} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: '130px' }}>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Status Inicial</label>
-                      <select value={newTaskStatus} onChange={(e) => setNewTaskStatus(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px', backgroundColor: '#FFF' }}>
-                        <option value="A fazer">⏳ A fazer</option>
-                        <option value="Em andamento">⚙️ Em andamento</option>
-                        <option value="Concluído">✅ Concluído</option>
-                      </select>
-                    </div>
-                  </div>
+                  if (task.status === 'doing') {
+                    badgeIcon = <Clock size={14} color={COLORS.secondary} />;
+                    bgTaskColor = '#FEF3C7';
+                  } else if (task.status === 'done') {
+                    badgeIcon = <CheckCircle2 size={14} color={COLORS.success} />;
+                    bgTaskColor = '#D1FAE5';
+                  }
 
-                  <button type="submit" style={{ padding: '10px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', alignSelf: 'flex-end' }}>
-                    Vincular Item ao Checklist
-                  </button>
-                </form>
-              </div>
-
-              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #E5E7EB' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>✍️ Parecer do Especialista / Diário Técnico</h3>
-                <textarea value={currentProject.diario} onChange={(e) => handleUpdateDiario(e.target.value)} placeholder="Insira aqui as anotações, ocorrências e avaliações de engenharia para compor o relatório..." style={{ width: '100%', boxSizing: 'border-box', height: '110px', padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, fontSize: '13px', outline: 'none', resize: 'vertical' }} />
-              </div>
+                  return (
+                    <div key={task.id} onClick={() => handleToggleTaskStatus(task.id, task.status)} style={{ display: 'flex', alignItems: 'center', justifyBetween: 'space-between', padding: '12px', borderRadius: '8px', backgroundColor: bgTaskColor, cursor: 'pointer', border: '1px solid rgba(0,0,0,0.03)', transition: 'background-color 0.2s' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                        {badgeIcon}
+                        <span style={{ fontSize: '14px', color: COLORS.textDark, textDecoration: task.status === 'done' ? 'line-through' : 'none', fontWeight: '500' }}>{task.text}</span>
+                      </div>
+                      <span style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: '700', color: COLORS.textLight }}>
+                        {task.status === 'todo' && 'Pendente'}
+                        {task.status === 'doing' && 'Em Execução'}
+                        {task.status === 'done' && 'Ok'}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
             </div>
-          </>
-        )}
-      </main>
-    </div>
-  );
+            <div style={{ marginTop: '16px', fontSize: '11px', color: '#9CA3AF', textAlign: 'center' }}>
+              Clique sobre o card do item para alternar o status (Pendente → Em Execução → Ok)
+            </div>
+          </div>
+
+        </main>
+      </div>
+    );
+  }
+
+  return null;
 }
