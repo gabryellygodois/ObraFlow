@@ -1,26 +1,21 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Link do manifesto para o celular reconhecer o ícone -->
-  <link rel="manifest" href="/manifest.json">
-
-  <!-- Ícones para navegadores e Android -->
-  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
-
-  <!-- Ícone específico para iPhone / iOS -->
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  
-  <!-- Cor da barra de status do celular -->
-  <meta name="theme-color" content="#1F2328">
-  <meta name="apple-mobile-web-app-status-bar-style" content="#1F2328">
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>obraflow</title>
+
+    <!-- Ícone obrigatório para iPhone / iOS -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+
+    <!-- Ícones para Android / Navegadores -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Cores da barra do celular -->
+    <meta name="theme-color" content="#1F2328">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#1F2328">
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
-</html>
