@@ -98,24 +98,24 @@ const INITIAL_PROJECTS = {
 };
 
 export default function App() {
-  // Controle de Autenticação Real
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // 'login' ou 'signup'
+  const [authMode, setAuthMode] = useState('login'); 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); 
+  
+  // Novos estados para carregar o perfil dinâmico
   const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('engenheiro'); 
   const [authError, setAuthError] = useState('');
 
-  // Estados de Navegação e Filtros
   const [currentScreen, setCurrentScreen] = useState('login');
   const [activeTab, setActiveTab] = useState('nre'); 
 
-  // Estado unificado de projetos
   const [projects, setProjects] = useState(INITIAL_PROJECTS);
   const [activeProjectCode, setActiveProjectCode] = useState('');
   
-  // Inputs de novas tarefas e obras
   const [newTaskText, setNewTaskText] = useState('');
   const [newTaskDeadline, setNewTaskDeadline] = useState('');
   const [newTaskStatus, setNewTaskStatus] = useState('A fazer');
@@ -123,15 +123,16 @@ export default function App() {
   const [newProjTitle, setNewProjTitle] = useState('');
   const [newProjLocation, setNewProjLocation] = useState('');
 
-  // 1. Monitora persistência de login do usuário logado
   useEffect(() => {
     const activeUser = localStorage.getItem('obraflow_current_user');
+    const activeRole = localStorage.getItem('obraflow_current_role');
+    
     if (activeUser) {
       setUserName(activeUser);
+      setUserRole(activeRole || 'engenheiro');
       setIsLoggedIn(true);
       setCurrentScreen('dashboard');
 
-      // Puxa os projetos vinculados especificamente a este usuário
       const savedUserData = localStorage.getItem(`obraflow_data_${activeUser}`);
       if (savedUserData) {
         setProjects(JSON.parse(savedUserData));
@@ -141,17 +142,22 @@ export default function App() {
     }
   }, []);
 
-  // 2. Salva as alterações de projetos isoladas por usuário logado
   useEffect(() => {
     if (isLoggedIn && userName) {
       localStorage.setItem(`obraflow_data_${userName}`, JSON.stringify(projects));
     }
   }, [projects, isLoggedIn, userName]);
 
-  const extractNameFromEmail = (inputEmail) => {
-    const part = inputEmail.split('@')[0];
-    const rawName = part.split(/[\._-]/)[0];
-    return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  const extractFirstNameFromEmail = (inputEmail) => {
+    const usernamePart = inputEmail.split('@')[0];
+    let cleanName = usernamePart.split(/[\._-]/)[0];
+    
+    if (cleanName.toLowerCase().startsWith('gabryelly')) {
+      cleanName = 'Gabryelly';
+    } else {
+      cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    }
+    return cleanName;
   };
 
   const handleAuthSubmit = (e) => {
@@ -161,25 +167,25 @@ export default function App() {
     const registeredUsers = JSON.parse(localStorage.getItem('obraflow_users_db') || '[]');
 
     if (authMode === 'signup') {
-      // Regra de Cadastro
       const userExists = registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
       if (userExists) {
         setAuthError('Este e-mail já está cadastrado.');
         return;
       }
 
-      const generatedName = extractNameFromEmail(email);
-      const updatedUsersList = [...registeredUsers, { email, password, name: generatedName }];
+      const generatedName = extractFirstNameFromEmail(email);
+      const updatedUsersList = [...registeredUsers, { email, password, name: generatedName, role: userRole }];
       localStorage.setItem('obraflow_users_db', JSON.stringify(updatedUsersList));
       
-      // Loga automaticamente após cadastrar
-      localStorage.setItem('obraflow_current_user', generatedName);
+      if (rememberMe) {
+        localStorage.setItem('obraflow_current_user', generatedName);
+        localStorage.setItem('obraflow_current_role', userRole);
+      }
       setUserName(generatedName);
-      setProjects(INITIAL_PROJECTS); // Carrega dados padrão iniciais para a nova conta
+      setProjects(INITIAL_PROJECTS);
       setIsLoggedIn(true);
       setCurrentScreen('dashboard');
     } else {
-      // Regra de Login Real
       const matchedUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
       
       if (!matchedUser) {
@@ -187,8 +193,16 @@ export default function App() {
         return;
       }
 
-      localStorage.setItem('obraflow_current_user', matchedUser.name);
+      if (rememberMe) {
+        localStorage.setItem('obraflow_current_user', matchedUser.name);
+        localStorage.setItem('obraflow_current_role', matchedUser.role || 'engenheiro');
+      } else {
+        localStorage.removeItem('obraflow_current_user');
+        localStorage.removeItem('obraflow_current_role');
+      }
+      
       setUserName(matchedUser.name);
+      setUserRole(matchedUser.role || 'engenheiro');
       
       const savedUserData = localStorage.getItem(`obraflow_data_${matchedUser.name}`);
       setProjects(savedUserData ? JSON.parse(savedUserData) : INITIAL_PROJECTS);
@@ -200,6 +214,7 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('obraflow_current_user');
+    localStorage.removeItem('obraflow_current_role');
     setIsLoggedIn(false);
     setPassword('');
     setEmail('');
@@ -285,7 +300,13 @@ export default function App() {
     setShowNewProjectForm(false);
   };
 
-  // MÁQUINA DE VISÃO GERAL SIMPLES (Cálculos Globais)
+  // Renderiza a saudação customizada conforme o papel escolhido
+  const renderGreeting = () => {
+    if (userRole === 'engenheiro') return `Olá, Engenheiro(a) ${userName}! 👷‍♂️`;
+    if (userRole === 'arquiteto') return `Olá, Arquiteto(a) ${userName}! 📐`;
+    return `Olá, ${userName}! 👋`; // Caso seja Cliente
+  };
+
   const totalObras = Object.keys(projects).length;
   const todasAsTarefas = Object.values(projects).flatMap(p => p.tasks);
   const tarefasConcluidasCount = todasAsTarefas.filter(t => t.status === 'Concluído').length;
@@ -316,6 +337,23 @@ export default function App() {
           )}
 
           <form onSubmit={handleAuthSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            {/* SELEÇÃO DO TIPO DE PERFIL - EXIBIDO APENAS NO CADASTRO */}
+            {authMode === 'signup' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', color: COLORS.slate }}>Tipo de Perfil</label>
+                <select 
+                  value={userRole} 
+                  onChange={(e) => setUserRole(e.target.value)} 
+                  style={{ width: '100%', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, color: COLORS.charcoal, outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="engenheiro">👷‍♂️ Engenheiro(a)</option>
+                  <option value="arquiteto">📐 Arquiteto(a)</option>
+                  <option value="cliente">🏠 Cliente</option>
+                </select>
+              </div>
+            )}
+
             <div>
               <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px', color: COLORS.slate }}>E-mail corporativo</label>
               <input type="email" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, color: COLORS.charcoal, outline: 'none' }} placeholder="nome@empresa.com" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -327,6 +365,20 @@ export default function App() {
                 <button type="button" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: COLORS.ash }} onClick={() => setShowPassword(!showPassword)}>{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button>
               </div>
             </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0' }}>
+              <input 
+                type="checkbox" 
+                id="rememberMe" 
+                checked={rememberMe} 
+                onChange={(e) => setRememberMe(e.target.checked)} 
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: COLORS.olive }}
+              />
+              <label htmlFor="rememberMe" style={{ fontSize: '13px', color: COLORS.slate, cursor: 'pointer', userSelect: 'none' }}>
+                Salvar usuário neste dispositivo
+              </label>
+            </div>
+
             <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', backgroundColor: COLORS.olive, color: COLORS.white, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
               {authMode === 'login' ? 'Entrar no Sistema' : 'Finalizar Cadastro'}
             </button>
@@ -350,196 +402,182 @@ export default function App() {
       <header style={{ backgroundColor: COLORS.white, padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E7EB' }}>
         <Logo size={40} withLabel={true} center={false} />
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: COLORS.slate }}>Olá, Eng. {userName}! 👷‍♂️</span>
+          {/* SAUDAÇÃO CUSTOMIZADA POR PERFIL */}
+          <span style={{ fontSize: '14px', fontWeight: '500', color: COLORS.slate }}>{renderGreeting()}</span>
           <button onClick={handleLogout} style={{ padding: '6px 12px', fontSize: '12px', borderRadius: '8px', border: '1px solid #D1D5DB', backgroundColor: COLORS.white, cursor: 'pointer', color: COLORS.slate }}>Sair</button>
         </div>
       </header>
 
-      {/* DASHBOARD PRINCIPAL */}
-      {currentScreen === 'dashboard' && (
-        <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-          
-          {/* COMPONENTE: VISÃO GERAL SIMPLES (ESTATÍSTICAS) */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.ash, textTransform: 'uppercase' }}>Obras Ativas</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: COLORS.charcoal, marginTop: '4px' }}>{totalObras}</div>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
+        {currentScreen === 'dashboard' && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.ash, textTransform: 'uppercase' }}>Obras Ativas</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: COLORS.charcoal, marginTop: '4px' }}>{totalObras}</div>
+              </div>
+              <div style={{ backgroundColor: '#FEF3C7', padding: '20px', borderRadius: '12px', border: '1px solid #FCD34D' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#B45309', textTransform: 'uppercase' }}>⏳ A Fazer / Pendentes</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#92400E', marginTop: '4px' }}>{tarefasPendentesCount}</div>
+              </div>
+              <div style={{ backgroundColor: '#DBEAFE', padding: '20px', borderRadius: '12px', border: '1px solid #BFDBFE' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#1D4ED8', textTransform: 'uppercase' }}>⚙️ Em Andamento</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1E40AF', marginTop: '4px' }}>{tarefasAndamentoCount}</div>
+              </div>
+              <div style={{ backgroundColor: '#D1FAE5', padding: '20px', borderRadius: '12px', border: '1px solid #A7F3D0' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#047857', textTransform: 'uppercase' }}>✅ Concluídas</div>
+                <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065F46', marginTop: '4px' }}>{tarefasConcluidasCount}</div>
+              </div>
             </div>
-            <div style={{ backgroundColor: '#FEF3C7', padding: '20px', borderRadius: '12px', border: '1px solid #FCD34D' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#B45309', textTransform: 'uppercase' }}>⏳ A Fazer / Pendentes</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#92400E', marginTop: '4px' }}>{tarefasPendentesCount}</div>
-            </div>
-            <div style={{ backgroundColor: '#DBEAFE', padding: '20px', borderRadius: '12px', border: '1px solid #BFDBFE' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#1D4ED8', textTransform: 'uppercase' }}>⚙️ Em Andamento</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1E40AF', marginTop: '4px' }}>{tarefasAndamentoCount}</div>
-            </div>
-            <div style={{ backgroundColor: '#D1FAE5', padding: '20px', borderRadius: '12px', border: '1px solid #A7F3D0' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: '#047857', textTransform: 'uppercase' }}>✅ Concluídas</div>
-              <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#065F46', marginTop: '4px' }}>{tarefasConcluidasCount}</div>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0 }}>Carteira de Projetos</h1>
-            </div>
-            <button 
-              onClick={() => setShowNewProjectForm(!showNewProjectForm)}
-              style={{ padding: '10px 18px', backgroundColor: COLORS.charcoal, color: COLORS.white, border: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
-            >
-              {showNewProjectForm ? '✕ Cancelar Cadastro' : `+ Adicionar Nova Demanda`}
-            </button>
-          </div>
-
-          {showNewProjectForm && (
-            <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '16px', border: `2px dashed ${COLORS.olive}`, marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: '15px' }}>Cadastrar Nova Demanda ({activeTab === 'nre' ? 'Setor Público NRE' : 'Projetos Particulares'})</h3>
-              <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <input type="text" required placeholder="Nome do Projeto / Escola" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
-                  <input type="text" required placeholder="Endereço Completo" value={newProjLocation} onChange={(e) => setNewProjLocation(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
-                </div>
-                <button type="submit" style={{ alignSelf: 'flex-start', padding: '10px 20px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
-                  Salvar Obra no Painel
-                </button>
-              </form>
-            </div>
-          )}
-
-          <div style={{ backgroundColor: COLORS.white, padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
-            
-            <div style={{ display: 'flex', borderBottom: '2px solid #E5E7EB', marginBottom: '20px', gap: '8px' }}>
-              <button onClick={() => { setActiveTab('nre'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'nre' ? `3px solid ${COLORS.olive}` : '3px solid transparent', color: activeTab === 'nre' ? COLORS.oliveDark : COLORS.ash }}>
-                🏫 Demandas Públicas NRE
-              </button>
-              <button onClick={() => { setActiveTab('particulares'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'particulares' ? `3px solid ${COLORS.charcoal}` : '3px solid transparent', color: activeTab === 'particulares' ? COLORS.charcoal : COLORS.ash }}>
-                💼 Projetos Particulares
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0 }}>Carteira de Projetos</h1>
+              </div>
+              <button 
+                onClick={() => setShowNewProjectForm(!showNewProjectForm)}
+                style={{ padding: '10px 18px', backgroundColor: COLORS.charcoal, color: COLORS.white, border: 'none', borderRadius: '10px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}
+              >
+                {showNewProjectForm ? '✕ Cancelar Cadastro' : `+ Adicionar Nova Demanda`}
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {Object.keys(projects)
-                .filter(code => projects[code].category === activeTab)
-                .map(code => {
-                  const proj = projects[code];
-                  const finished = proj.tasks.filter(t => t.status === 'Concluído').length;
-                  const total = proj.tasks.length;
-                  const percentual = total > 0 ? Math.round((finished / total) * 100) : 0;
-
-                  return (
-                    <div key={code} onClick={() => openProjectDetails(code)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderRadius: '12px', backgroundColor: '#F9FAFB', cursor: 'pointer', border: '1px solid #E5E7EB', transition: '0.2s' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '15px', color: COLORS.charcoal }}>{proj.title} <span style={{ color: COLORS.olive, fontSize: '12px' }}>({code})</span></div>
-                        <div style={{ fontSize: '12px', color: COLORS.ash, marginTop: '2px' }}>📍 {proj.location}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: COLORS.oliveDark }}>{percentual}% Concluído</span>
-                        <div style={{ fontSize: '11px', color: COLORS.ash }}>{finished} de {total} macro-tarefas</div>
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* TELA DE DETALHES COM TRIPLO STATUS E PRAZOS */}
-      {currentScreen === 'detalhes' && currentProject && (
-        <main style={{ maxWidth: '850px', margin: '0 auto', padding: '24px' }}>
-          <button onClick={() => setCurrentScreen('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: COLORS.charcoal, fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginBottom: '16px', padding: 0 }}>
-            ← Voltar para a Visão Geral
-          </button>
-
-          <div style={{ backgroundColor: COLORS.white, padding: '28px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
-            <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '24px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: COLORS.white, backgroundColor: COLORS.charcoal, padding: '4px 8px', borderRadius: '6px' }}>{activeProjectCode}</span>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '12px 0 4px 0' }}>{currentProject.title}</h1>
-              <p style={{ color: COLORS.ash, margin: 0, fontSize: '13px' }}>📍 {currentProject.location}</p>
-            </div>
-
-            {/* LISTA DE TAREFAS EVOLUÍDA (A FAZER, EM ANDAMENTO, CONCLUÍDO + PRAZO) */}
-            <div>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>📋 Fluxo de Tarefas da Inspeção</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
-                {currentProject.tasks.map((task) => (
-                  <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', borderRadius: '10px', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', gap: '12px', flexWrap: 'wrap' }}>
-                    
-                    <div style={{ flex: 1, minWidth: '250px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: task.status === 'Concluído' ? COLORS.ash : COLORS.charcoal, textDecoration: task.status === 'Concluído' ? 'line-through' : 'none' }}>
-                        {task.text}
-                      </div>
-                      <div style={{ fontSize: '11px', color: '#EF4444', fontWeight: '600', marginTop: '4px' }}>
-                        📅 Limite: {task.deadline.split('-').reverse().join('/')}
-                      </div>
-                    </div>
-
-                    {/* SELECT DO TRIPLO STATUS DO PROJETO */}
-                    <select 
-                      value={task.status} 
-                      onChange={(e) => changeTaskStatus(task.id, e.target.value)}
-                      style={{ 
-                        padding: '6px 10px', 
-                        borderRadius: '6px', 
-                        fontSize: '12px', 
-                        fontWeight: 'bold', 
-                        border: '1px solid #D1D5DB', 
-                        outline: 'none',
-                        cursor: 'pointer',
-                        backgroundColor: task.status === 'Concluído' ? '#D1FAE5' : task.status === 'Em andamento' ? '#DBEAFE' : '#FEF3C7',
-                        color: task.status === 'Concluído' ? '#065F46' : task.status === 'Em andamento' ? '#1E40AF' : '#92400E'
-                      }}
-                    >
-                      <option value="A fazer">⏳ A fazer</option>
-                      <option value="Em andamento">⚙️ Em andamento</option>
-                      <option value="Concluído">✅ Concluído</option>
-                    </select>
-
+            {showNewProjectForm && (
+              <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '16px', border: `2px dashed ${COLORS.olive}`, marginBottom: '24px' }}>
+                <h3 style={{ margin: '0 0 16px 0', fontSize: '15px' }}>Cadastrar Nova Demanda ({activeTab === 'nre' ? 'Setor Público NRE' : 'Projetos Particulares'})</h3>
+                <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <input type="text" required placeholder="Nome do Projeto / Escola" value={newProjTitle} onChange={(e) => setNewProjTitle(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
+                    <input type="text" required placeholder="Endereço Completo" value={newProjLocation} onChange={(e) => setNewProjLocation(e.target.value)} style={{ flex: 1, minWidth: '200px', padding: '10px 14px', borderRadius: '8px', border: '1px solid #D1D5DB', fontSize: '14px' }} />
                   </div>
-                ))}
-                
-                {currentProject.tasks.length === 0 && (
-                  <div style={{ fontSize: '13px', color: COLORS.ash, fontStyle: 'italic', padding: '12px 0' }}>Nenhuma tarefa cadastrada nesta obra.</div>
-                )}
+                  <button type="submit" style={{ alignSelf: 'flex-start', padding: '10px 20px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '8px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>
+                    Salvar Obra no Painel
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <div style={{ backgroundColor: COLORS.white, padding: '24px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ display: 'flex', borderBottom: '2px solid #E5E7EB', marginBottom: '20px', gap: '8px' }}>
+                <button onClick={() => { setActiveTab('nre'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'nre' ? `3px solid ${COLORS.olive}` : '3px solid transparent', color: activeTab === 'nre' ? COLORS.oliveDark : COLORS.ash }}>
+                  🏫 Demandas Públicas NRE
+                </button>
+                <button onClick={() => { setActiveTab('particulares'); setShowNewProjectForm(false); }} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: '600', border: 'none', background: 'none', cursor: 'pointer', borderBottom: activeTab === 'particulares' ? `3px solid ${COLORS.charcoal}` : '3px solid transparent', color: activeTab === 'particulares' ? COLORS.charcoal : COLORS.ash }}>
+                  💼 Projetos Particulares
+                </button>
               </div>
 
-              {/* FORMULÁRIO COMPLETO COM ENTRADA DE PRAZO E STATUS */}
-              <form onSubmit={handleAddTask} style={{ backgroundColor: COLORS.bgLight, padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: COLORS.slate }}>+ Adicionar Nova Diretriz à Vistoria:</div>
-                <input type="text" required value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="Descrição do item técnico..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {Object.keys(projects)
+                  .filter(code => projects[code].category === activeTab)
+                  .map(code => {
+                    const proj = projects[code];
+                    const finished = proj.tasks.filter(t => t.status === 'Concluído').length;
+                    const total = proj.tasks.length;
+                    const percentual = total > 0 ? Math.round((finished / total) * 100) : 0;
+
+                    return (
+                      <div key={code} onClick={() => openProjectDetails(code)} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', borderRadius: '12px', backgroundColor: '#F9FAFB', cursor: 'pointer', border: '1px solid #E5E7EB', transition: '0.2s' }}>
+                        <div>
+                          <div style={{ fontWeight: 'bold', fontSize: '15px', color: COLORS.charcoal }}>{proj.title} <span style={{ color: COLORS.olive, fontSize: '12px' }}>({code})</span></div>
+                          <div style={{ fontSize: '12px', color: COLORS.ash, marginTop: '2px' }}>📍 {proj.location}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: COLORS.oliveDark }}>{percentual}% Concluído</span>
+                          <div style={{ fontSize: '11px', color: COLORS.ash }}>{finished} de {total} macro-tarefas</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {currentScreen === 'detalhes' && currentProject && (
+          <>
+            <button onClick={() => setCurrentScreen('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: COLORS.charcoal, fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginBottom: '16px', padding: 0 }}>
+              ← Voltar para a Visão Geral
+            </button>
+
+            <div style={{ backgroundColor: COLORS.white, padding: '28px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
+              <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '24px' }}>
+                <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: COLORS.white, backgroundColor: COLORS.charcoal, padding: '4px 8px', borderRadius: '6px' }}>{activeProjectCode}</span>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '12px 0 4px 0' }}>{currentProject.title}</h1>
+                <p style={{ color: COLORS.ash, margin: 0, fontSize: '13px' }}>📍 {currentProject.location}</p>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>📋 Fluxo de Tarefas da Inspeção</h3>
                 
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '130px' }}>
-                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Prazo Limite</label>
-                    <input type="date" required value={newTaskDeadline} onChange={(e) => setNewTaskDeadline(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px' }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: '130px' }}>
-                    <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Status Inicial</label>
-                    <select value={newTaskStatus} onChange={(e) => setNewTaskStatus(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px', backgroundColor: '#FFF' }}>
-                      <option value="A fazer">⏳ A fazer</option>
-                      <option value="Em andamento">⚙️ Em andamento</option>
-                      <option value="Concluído">✅ Concluído</option>
-                    </select>
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+                  {currentProject.tasks.map((task) => (
+                    <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', borderRadius: '10px', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', gap: '12px', flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: '250px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: '500', color: task.status === 'Concluído' ? COLORS.ash : COLORS.charcoal, textDecoration: task.status === 'Concluído' ? 'line-through' : 'none' }}>
+                          {task.text}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#EF4444', fontWeight: '600', marginTop: '4px' }}>
+                          📅 Limite: {task.deadline.split('-').reverse().join('/')}
+                        </div>
+                      </div>
+
+                      <select 
+                        value={task.status} 
+                        onChange={(e) => changeTaskStatus(task.id, e.target.value)}
+                        style={{ 
+                          padding: '6px 10px', 
+                          borderRadius: '6px', 
+                          fontSize: '12px', 
+                          fontWeight: 'bold', 
+                          border: '1px solid #D1D5DB', 
+                          outline: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: task.status === 'Concluído' ? '#D1FAE5' : task.status === 'Em andamento' ? '#DBEAFE' : '#FEF3C7',
+                          color: task.status === 'Concluído' ? '#065F46' : task.status === 'Em andamento' ? '#1E40AF' : '#92400E'
+                        }}
+                      >
+                        <option value="A fazer">⏳ A fazer</option>
+                        <option value="Em andamento">⚙️ Em andamento</option>
+                        <option value="Concluído">✅ Concluído</option>
+                      </select>
+                    </div>
+                  ))}
                 </div>
 
-                <button type="submit" style={{ padding: '10px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', alignSelf: 'flex-end' }}>
-                  Vincular Item ao Checklist
-                </button>
-              </form>
-            </div>
+                <form onSubmit={handleAddTask} style={{ backgroundColor: COLORS.bgLight, padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: COLORS.slate }}>+ Adicionar Nova Diretriz à Vistoria:</div>
+                  <input type="text" required value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="Descrição do item técnico..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
+                  
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: '130px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Prazo Limite</label>
+                      <input type="date" required value={newTaskDeadline} onChange={(e) => setNewTaskDeadline(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px' }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '130px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Status Inicial</label>
+                      <select value={newTaskStatus} onChange={(e) => setNewTaskStatus(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '12px', backgroundColor: '#FFF' }}>
+                        <option value="A fazer">⏳ A fazer</option>
+                        <option value="Em andamento">⚙️ Em andamento</option>
+                        <option value="Concluído">✅ Concluído</option>
+                      </select>
+                    </div>
+                  </div>
 
-            {/* DIÁRIO TÉCNICO */}
-            <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #E5E7EB' }}>
-              <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>✍️ Parecer do Especialista / Diário Técnico</h3>
-              <textarea value={currentProject.diario} onChange={(e) => handleUpdateDiario(e.target.value)} placeholder="Insira aqui as anotações, ocorrências e avaliações de engenharia para compor o relatório..." style={{ width: '100%', boxSizing: 'border-box', height: '110px', padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, fontSize: '13px', outline: 'none', resize: 'vertical' }} />
-              <div style={{ fontSize: '11px', color: COLORS.ash, marginTop: '4px', textAlign: 'right' }}>💾 Salvo localmente na conta logada.</div>
-            </div>
+                  <button type="submit" style={{ padding: '10px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', alignSelf: 'flex-end' }}>
+                    Vincular Item ao Checklist
+                  </button>
+                </form>
+              </div>
 
-          </div>
-        </main>
-      )}
+              <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #E5E7EB' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>✍️ Parecer do Especialista / Diário Técnico</h3>
+                <textarea value={currentProject.diario} onChange={(e) => handleUpdateDiario(e.target.value)} placeholder="Insira aqui as anotações, ocorrências e avaliações de engenharia para compor o relatório..." style={{ width: '100%', boxSizing: 'border-box', height: '110px', padding: '12px', borderRadius: '10px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight, fontSize: '13px', outline: 'none', resize: 'vertical' }} />
+              </div>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }
