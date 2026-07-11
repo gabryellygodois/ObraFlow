@@ -3,7 +3,6 @@ import {
   Building2, 
   FileText, 
   CheckSquare, 
-  ClipboardList, 
   User, 
   LogOut, 
   Plus, 
@@ -135,7 +134,7 @@ export default function App() {
   // Troca de Senha
   const handleChangePassword = (e) => {
     e.preventDefault();
-    const currentRole = user?.role; // 'fiscal' ou 'particular'
+    const currentRole = user?.role;
     
     if (currentPassInput !== passwords[currentRole]) {
       setPasswordError('Senha atual incorreta.');
@@ -238,7 +237,7 @@ export default function App() {
         diario: diarioText
       }
     }));
-    alert('Diário de obra updated!');
+    alert('Diário de obra atualizado!');
   };
 
   // Abrir Detalhes da Obra
@@ -336,7 +335,7 @@ export default function App() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', marginBottom: '4px', color: COLORS.textLight }}>Confirmar Nova Senha</label>
-                  <input type="password" required value={confirmPassInput} onChange={e => confirmPassInput(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box' }} />
+                  <input type="password" required value={confirmPassInput} onChange={e => setConfirmPassInput(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', boxSizing: 'border-box' }} />
                 </div>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', justifyContent: 'flex-end' }}>
                   <button type="button" onClick={() => setShowPasswordModal(false)} style={{ backgroundColor: '#E5E7EB', color: COLORS.textDark, border: 'none', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Cancelar</button>
@@ -359,7 +358,7 @@ export default function App() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyBetween: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h2 style={{ fontSize: '22px', fontWeight: '700', color: COLORS.textDark }}>
               {activeTab === 'nre' ? 'Demandas de Núcleos Regionais de Educação' : 'Projetos e Reformas Privadas'}
             </h2>
@@ -402,7 +401,7 @@ export default function App() {
                 const pct = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) : 0;
 
                 return (
-                  <div key={code} onClick={() => openProjectDetails(code)} style={{ backgroundColor: COLORS.white, borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyBetween: 'space-between' }}>
+                  <div key={code} onClick={() => openProjectDetails(code)} style={{ backgroundColor: COLORS.white, borderRadius: '12px', padding: '20px', border: '1px solid #E5E7EB', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <span style={{ backgroundColor: '#E0E7FF', color: COLORS.primary, padding: '4px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: '700' }}>{code}</span>
