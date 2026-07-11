@@ -37,7 +37,7 @@ const INITIAL_PROJECTS = {
     diario: 'Fundações concluídas. Iniciando alvenaria do primeiro pavimento.',
     tasks: [
       { id: 1, text: 'Escavação das sapatas', status: 'done' },
-      { id: 2, text: 'Concretagem dos blocos', status: 'done' },
+      { id: 2, text: 'Concretagem dos blocks', status: 'done' },
       { id: 3, text: 'Levantamento de alvenaria', status: 'doing' },
       { id: 4, text: 'Instalações hidráulicas embutidas', status: 'todo' }
     ]
@@ -136,6 +136,8 @@ export default function App() {
     e.preventDefault();
     const currentRole = user?.role;
     
+    if (!currentRole) return;
+
     if (currentPassInput !== passwords[currentRole]) {
       setPasswordError('Senha atual incorreta.');
       return;
