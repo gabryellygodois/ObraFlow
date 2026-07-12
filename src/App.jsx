@@ -1,4 +1,10 @@
 import { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+
+// Configuração do Banco de Dados na Nuvem (Supabase)
+const SUPABASE_URL = 'https://xxgpqgkfthxnmkxljhwk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_eTMf6uaPbaFLzy3xwPdMIw_SEDw4Qpt';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const COLORS = {
   white: '#FFFFFF',
@@ -36,20 +42,16 @@ function Logo({ size = 50, withLabel = true, center = true }) {
         <path d="M20 85 V 45 H 38 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M26 55 H 32" stroke={COLORS.charcoal} strokeWidth="1.5" />
         <path d="M26 67 H 32" stroke={COLORS.charcoal} strokeWidth="1.5" />
-
         <path d="M38 85 V 15 H 62 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M46 27 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
         <path d="M46 39 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
         <path d="M46 51 H 54" stroke={COLORS.charcoal} strokeWidth="1.5" />
-        
         <path d="M62 85 V 35 H 80 V 85" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinejoin="round" />
         <path d="M68 47 H 74" stroke={COLORS.charcoal} strokeWidth="1.5" />
         <path d="M68 59 H 74" stroke={COLORS.charcoal} strokeWidth="1.5" />
-
         <path d="M12 85 H 88" stroke={COLORS.charcoal} strokeWidth="2.5" strokeLinecap="round" />
         <path d="M72 70 L 78 76 L 90 60" stroke={COLORS.olive} strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      
       {withLabel && (
         <div style={{ textAlign: center ? 'center' : 'left', marginTop: '8px' }}>
           <div style={{ fontWeight: 'bold', fontSize: '20px', color: COLORS.charcoal, fontFamily: 'sans-serif' }}>
@@ -95,11 +97,11 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   
   const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState('engenheiro');
   const [authError, setAuthError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const [currentScreen, setCurrentScreen] = useState('login');
   const [activeTab, setActiveTab] = useState('nre');
@@ -115,7 +117,6 @@ export default function App() {
   const [newProjLocation, setNewProjLocation] = useState('');
   const [newProjEquipe, setNewProjEquipe] = useState('');
 
-  // Estados para a troca de senha REAL no localStorage
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [inputNovaSenha, setInputNovaSenha] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
@@ -158,54 +159,81 @@ export default function App() {
     return cleanName;
   };
 
-  const handleAuthSubmit = (e) => {
+  // Fluxo de Cadastro e Login integrado ao Supabase (Banco na Nuvem)
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
+    setLoading(true);
 
-    const registeredUsers = JSON.parse(localStorage.getItem('obraflow_users_db') || '[]');
+    try {
+      if (authMode === 'signup') {
+        // Verifica se o e-mail já existe na tabela da nuvem
+        const { data: existingUsers, error: checkError } = await supabase
+          .from('usuarios')
+          .select('email')
+          .eq('email', email.toLowerCase());
 
-    if (authMode === 'signup') {
-      const userExists = registeredUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
-      if (userExists) {
-        setAuthError('Este e-mail já está cadastrado.');
-        return;
-      }
+        if (checkError) throw checkError;
 
-      const generatedName = extractFirstNameFromEmail(email);
-      const updatedUsersList = [...registeredUsers, { email: email.toLowerCase(), password, name: generatedName, role: userRole }];
-      localStorage.setItem('obraflow_users_db', JSON.stringify(updatedUsersList));
-      
-      if (rememberMe) {
+        if (existingUsers && existingUsers.length > 0) {
+          setAuthError('Este e-mail já está cadastrado na nuvem.');
+          setLoading(false);
+          return;
+        }
+
+        const generatedName = extractFirstNameFromEmail(email);
+
+        // Insere o novo usuário diretamente no Supabase
+        const { error: insertError } = await supabase
+          .from('usuarios')
+          .insert([
+            { email: email.toLowerCase(), senha: password, nome: generatedName }
+          ]);
+
+        if (insertError) throw insertError;
+
         localStorage.setItem('obraflow_current_user', generatedName);
         localStorage.setItem('obraflow_current_role', userRole);
         localStorage.setItem('obraflow_current_email', email.toLowerCase());
-      }
-      setUserName(generatedName);
-      setProjects(INITIAL_PROJECTS);
-      setIsLoggedIn(true);
-      setCurrentScreen('dashboard');
-    } else {
-      // Normalizando a busca para evitar erros de letras maiúsculas/minúsculas no e-mail
-      const matchedUser = registeredUsers.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-      
-      if (!matchedUser) {
-        setAuthError('E-mail ou senha incorretos. Verifique os dados ou mude a senha se necessário.');
-        return;
-      }
 
-      if (rememberMe) {
-        localStorage.setItem('obraflow_current_user', matchedUser.name);
-        localStorage.setItem('obraflow_current_role', matchedUser.role || 'engenheiro');
+        setUserName(generatedName);
+        setProjects(INITIAL_PROJECTS);
+        setIsLoggedIn(true);
+        setCurrentScreen('dashboard');
+      } else {
+        // Validação de Login buscando direto na nuvem
+        const { data: users, error: loginError } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('email', email.toLowerCase())
+          .eq('senha', password);
+
+        if (loginError) throw loginError;
+
+        if (!users || users.length === 0) {
+          setAuthError('E-mail ou senha incorretos. Tente novamente ou mude a senha.');
+          setLoading(false);
+          return;
+        }
+
+        const matchedUser = users[0];
+
+        localStorage.setItem('obraflow_current_user', matchedUser.nome);
+        localStorage.setItem('obraflow_current_role', userRole);
         localStorage.setItem('obraflow_current_email', matchedUser.email);
+        
+        setUserName(matchedUser.nome);
+        
+        const savedUserData = localStorage.getItem(`obraflow_data_${matchedUser.nome}`);
+        setProjects(savedUserData ? JSON.parse(savedUserData) : INITIAL_PROJECTS);
+        setIsLoggedIn(true);
+        setCurrentScreen('dashboard');
       }
-      
-      setUserName(matchedUser.name);
-      setUserRole(matchedUser.role || 'engenheiro');
-      
-      const savedUserData = localStorage.getItem(`obraflow_data_${matchedUser.name}`);
-      setProjects(savedUserData ? JSON.parse(savedUserData) : INITIAL_PROJECTS);
-      setIsLoggedIn(true);
-      setCurrentScreen('dashboard');
+    } catch (err) {
+      console.error(err);
+      setAuthError('Erro na conexão com o banco de dados da nuvem. Verifique a tabela.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -222,29 +250,28 @@ export default function App() {
     setCurrentScreen('login');
   };
 
-  // Alteração real da senha salvando de volta no banco de dados simulado do localStorage
-  const handleTrocarSenhaReal = (e) => {
+  // Troca de senha sincronizada diretamente na Nuvem
+  const handleTrocarSenhaReal = async (e) => {
     e.preventDefault();
     if (!inputNovaSenha.trim()) return;
 
-    const registeredUsers = JSON.parse(localStorage.getItem('obraflow_users_db') || '[]');
-    
-    // Localiza o usuário atual logado com base no e-mail ativo
-    const userIndex = registeredUsers.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    try {
+      const { error: updateError } = await supabase
+        .from('usuarios')
+        .update({ senha: inputNovaSenha.trim() })
+        .eq('email', email.toLowerCase());
 
-    if (userIndex !== -1) {
-      // Atualiza a senha no array do "banco"
-      registeredUsers[userIndex].password = inputNovaSenha.trim();
-      localStorage.setItem('obraflow_users_db', JSON.stringify(registeredUsers));
+      if (updateError) throw updateError;
       
-      setPasswordMessage('✅ Senha alterada com sucesso!');
+      setPasswordMessage('✅ Senha atualizada na nuvem com sucesso!');
       setInputNovaSenha('');
       setTimeout(() => {
         setShowPasswordSection(false);
         setPasswordMessage('');
       }, 2000);
-    } else {
-      setPasswordMessage('❌ Erro: Usuário não localizado no banco local.');
+    } catch (err) {
+      console.error(err);
+      setPasswordMessage('❌ Erro ao atualizar senha no banco remoto.');
     }
   };
 
@@ -344,7 +371,7 @@ export default function App() {
           
           <div style={{ textAlign: 'center', marginBottom: '24px', marginTop: '20px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: COLORS.charcoal }}>
-              {authMode === 'login' ? 'Bem-vindo de volta' : 'Criar Nova Conta'}
+              {authMode === 'login' ? 'Acesso em Nuvem' : 'Criar Conta em Nuvem'}
             </h2>
           </div>
 
@@ -366,15 +393,15 @@ export default function App() {
               <input type="email" required style={{ width: '100%', boxSizing: 'border-box', padding: '12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight }} placeholder="nome@empresa.com" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px', color: COLORS.slate }}>Senha</label>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px', color: COLORS.slate }}>Senha global</label>
               <div style={{ position: 'relative', width: '100%' }}>
                 <input type={showPassword ? 'text' : 'password'} required style={{ width: '100%', boxSizing: 'border-box', padding: '12px 48px 12px 16px', borderRadius: '12px', fontSize: '14px', border: '1px solid #D1D5DB', backgroundColor: COLORS.bgLight }} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} />
                 <button type="button" style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: COLORS.ash }} onClick={() => { setShowPassword(!showPassword); }} >{showPassword ? <EyeOffIcon /> : <EyeIcon />}</button>
               </div>
             </div>
 
-            <button type="submit" style={{ width: '100%', padding: '12px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', backgroundColor: COLORS.olive, color: COLORS.white }}>
-              {authMode === 'login' ? 'Entrar no Sistema' : 'Finalizar Cadastro'}
+            <button type="submit" disabled={loading} style={{ width: '100%', padding: '12px', borderRadius: '12px', fontSize: '14px', fontWeight: '600', border: 'none', cursor: 'pointer', backgroundColor: COLORS.olive, color: COLORS.white, opacity: loading ? 0.6 : 1 }}>
+              {loading ? 'Conectando à nuvem...' : authMode === 'login' ? 'Sincronizar e Entrar' : 'Registrar na Nuvem'}
             </button>
           </form>
 
@@ -402,16 +429,13 @@ export default function App() {
       </header>
 
       <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px' }}>
-        
-        {/* Painel de Alteração de Senha Real */}
         {showPasswordSection && (
           <div style={{ backgroundColor: '#FFF', padding: '16px', borderRadius: '12px', border: '1px solid #D1D5DB', marginBottom: '20px', maxWidth: '320px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
             <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', color: COLORS.charcoal }}>Alterar Senha do Perfil</h4>
             <p style={{ margin: '0 0 10px 0', fontSize: '11px', color: COLORS.ash }}>Vinculado a: {email}</p>
-            
             <form onSubmit={handleTrocarSenhaReal} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input type="password" required placeholder="Digite a nova senha" value={inputNovaSenha} onChange={(e) => setInputNovaSenha(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #CCC', fontSize: '13px' }} />
-              <button type="submit" style={{ padding: '8px', backgroundColor: COLORS.olive, color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Atualizar no Banco</button>
+              <button type="submit" style={{ padding: '8px', backgroundColor: COLORS.olive, color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Atualizar na Nuvem</button>
             </form>
             {passwordMessage && <div style={{ fontSize: '12px', marginTop: '8px', fontWeight: '500' }}>{passwordMessage}</div>}
           </div>
@@ -421,7 +445,7 @@ export default function App() {
           <>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '24px' }}>
               <div style={{ backgroundColor: COLORS.white, padding: '20px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.ash, textTransform: 'uppercase' }}>Obras Atives</div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: COLORS.ash, textTransform: 'uppercase' }}>Obras Ativas</div>
                 <div style={{ fontSize: '28px', fontWeight: 'bold', color: COLORS.charcoal, marginTop: '4px' }}>{totalObras}</div>
               </div>
               <div style={{ backgroundColor: '#FEF3C7', padding: '20px', borderRadius: '12px', border: '1px solid #FCD34D' }}>
@@ -496,7 +520,6 @@ export default function App() {
         {currentScreen === 'detalhes' && currentProject && (
           <>
             <button onClick={() => setCurrentScreen('dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: COLORS.charcoal, fontSize: '14px', fontWeight: '600', cursor: 'pointer', marginBottom: '16px', padding: 0 }}>← Voltar para a Visão Geral</button>
-
             <div style={{ backgroundColor: COLORS.white, padding: '28px', borderRadius: '16px', border: '1px solid #E5E7EB' }}>
               <div style={{ borderBottom: '1px solid #E5E7EB', paddingBottom: '16px', marginBottom: '24px' }}>
                 <span style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: COLORS.white, backgroundColor: COLORS.charcoal, padding: '4px 8px', borderRadius: '6px' }}>{activeProjectCode}</span>
@@ -507,7 +530,6 @@ export default function App() {
 
               <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>📋 Fluxo de Tarefas da Inspeção</h3>
-                
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
                   {currentProject.tasks.map((task) => (
                     <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px', borderRadius: '10px', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', gap: '12px', flexWrap: 'wrap' }}>
@@ -515,7 +537,6 @@ export default function App() {
                         <div style={{ fontSize: '14px', fontWeight: '500', color: task.status === 'Concluído' ? COLORS.ash : COLORS.charcoal, textDecoration: task.status === 'Concluído' ? 'line-through' : 'none' }}>{task.text}</div>
                         <div style={{ fontSize: '11px', color: '#EF4444', fontWeight: '600', marginTop: '4px' }}>📅 Limite: {task.deadline && task.deadline.includes('-') ? task.deadline.split('-').reverse().join('/') : task.deadline}</div>
                       </div>
-
                       <select value={task.status} onChange={(e) => changeTaskStatus(task.id, e.target.value)} style={{ padding: '6px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #D1D5DB', backgroundColor: task.status === 'Concluído' ? '#D1FAE5' : task.status === 'Em andamento' ? '#DBEAFE' : '#FEF3C7', color: task.status === 'Concluído' ? '#065F46' : task.status === 'Em andamento' ? '#1E40AF' : '#92400E' }}>
                         <option value="A fazer">⏳ A fazer</option>
                         <option value="Em andamento">⚙️ Em andamento</option>
@@ -528,7 +549,6 @@ export default function App() {
                 <form onSubmit={handleAddTask} style={{ backgroundColor: COLORS.bgLight, padding: '16px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ fontSize: '12px', fontWeight: 'bold', color: COLORS.slate }}>+ Adicionar Nova Diretriz à Vistoria:</div>
                   <input type="text" required value={newTaskText} onChange={(e) => setNewTaskText(e.target.value)} placeholder="Descrição do item técnico..." style={{ padding: '10px', borderRadius: '6px', border: '1px solid #D1D5DB', fontSize: '13px' }} />
-                  
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <div style={{ flex: 1, minWidth: '130px' }}>
                       <label style={{ display: 'block', fontSize: '10px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', color: COLORS.ash }}>Prazo Limite</label>
@@ -543,7 +563,6 @@ export default function App() {
                       </select>
                     </div>
                   </div>
-
                   <button type="submit" style={{ padding: '10px', backgroundColor: COLORS.olive, color: COLORS.white, border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px', alignSelf: 'flex-end' }}>Vincular Item ao Checklist</button>
                 </form>
               </div>
