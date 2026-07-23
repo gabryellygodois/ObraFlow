@@ -1,16 +1,25 @@
-# React + Vite
+# 🏗️ ObraFlow
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+O **ObraFlow** é uma aplicação web desenvolvida para auxiliar na gestão, controle e acompanhamento de obras e projetos.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Tecnologias Utilizadas
 
-## React Compiler
+* **React**
+* **Vite**
+* **JavaScript**
+* **HTML5 / CSS3**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+## 🔗 Acesse o Projeto
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+Você pode visualizar e testar a aplicação online acessando:
+👉 [https://obra-flow-wagp.vercel.app/](https://obra-flow-wagp.vercel.app/)
+
+---
+
+## 📌 Funcionalidades
+* Cadastro e controle de etapas da obra
+* Interface responsiva e de fácil navegação
